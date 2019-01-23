@@ -68,6 +68,8 @@ def run_eval(args, checkpoint_path, output_dir, hparams, sentences):
 
 			for elems in zip(texts, mel_filenames, speaker_ids):
 				file.write('|'.join([str(x) for x in elems]) + '\n')
+			end = time.time()
+			log('the time costed {}'.format(end - start))
 	log('synthesized mel spectrograms at {}'.format(eval_dir))
 	return eval_dir
 
