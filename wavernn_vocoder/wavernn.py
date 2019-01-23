@@ -28,7 +28,7 @@ class MelResNet(nn.Module) :
     def __init__(self, res_blocks, in_dims, compute_dims, res_out_dims) :
         super().__init__()
         k_size = pad * 2 + 1
-        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=k_size, bias=False)
+        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=5, bias=False)
         self.batch_norm = nn.BatchNorm1d(compute_dims)
         self.layers = nn.ModuleList()
         for i in range(res_blocks) :
@@ -110,7 +110,7 @@ class Model(nn.Module) :
         self.fc1 = nn.Linear(rnn_dims + self.aux_dims, fc_dims)
         self.fc2 = nn.Linear(fc_dims + self.aux_dims, fc_dims)
         self.fc3 = nn.Linear(fc_dims, self.n_classes)
-        num_params(self)
+#        num_params(self)
     
     
     def forward(self, x, mels) :
@@ -144,7 +144,7 @@ class Model(nn.Module) :
         return F.log_softmax(self.fc3(x), dim=-1)
     
     
-    def generate(self, mels, save_path) :
+    def generate(self, mels) :
         
         self.eval()
         output = []
