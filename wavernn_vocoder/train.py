@@ -96,7 +96,7 @@ def train(log_dir, args, hparams, input_path) :
     trn_loader = DataLoader(dataset, collate_fn=collate, batch_size=batch_size, shuffle=True, pin_memory=args.use_cuda)
 
     # Initialize Model
-    model = WaveRNN(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,\
+    model = Model(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,\
                  feat_dims=hparams.feat_dims, compute_dims=hparams.compute_dims, res_out_dims=hparams.res_out_dims, res_blocks=hparams.res_blocks).to(device)
 
     # Load Model

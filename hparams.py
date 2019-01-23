@@ -185,6 +185,8 @@ hparams = tf.contrib.training.HParams(
 	input_type="raw", #Raw has better quality but harder to train. mulaw-quantize is easier to train but has lower quality.
 	quantize_channels=2**8,  # 65536 (16-bit) (raw) or 256 (8-bit) (mulaw or mulaw-quantize) // number of classes = 256 <=> mu = 255
 	wavernn_bits=8,
+        rnn_dims=512,
+        fc_dims=512,
 
 	wavernn_lr_rate=1e-4,
 	wavernn_pad=2,

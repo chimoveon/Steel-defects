@@ -61,7 +61,7 @@ def main():
 	parser.add_argument('--GTA', default='True', help='Ground truth aligned synthesis, defaults to True, only considered in synthesis mode')
 	parser.add_argument('--text_list', default='', help='Text file contains list of texts to be synthesized. Valid if mode=eval')
 	parser.add_argument('--base_dir', default='', help='')
-	parser.add_argument('--use-dir', default='', help='')
+	parser.add_argument('--use_cuda', default='True', help='')
 	args = parser.parse_args()
 
 	accepted_models = ['Tacotron', 'WaveRNN', 'Tacotron-2']
