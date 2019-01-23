@@ -27,8 +27,7 @@ class ResBlock(nn.Module) :
 class MelResNet(nn.Module) :
     def __init__(self, res_blocks, in_dims, compute_dims, res_out_dims) :
         super().__init__()
-        k_size = pad * 2 + 1
-        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=k_size, bias=False)
+        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=5, bias=False)
         self.batch_norm = nn.BatchNorm1d(compute_dims)
         self.layers = nn.ModuleList()
         for i in range(res_blocks) :
@@ -110,7 +109,7 @@ class Model(nn.Module) :
         self.fc1 = nn.Linear(rnn_dims + self.aux_dims, fc_dims)
         self.fc2 = nn.Linear(fc_dims + self.aux_dims, fc_dims)
         self.fc3 = nn.Linear(fc_dims, self.n_classes)
-        num_params(self)
+#        num_params(self)
     
     
     def forward(self, x, mels) :
@@ -144,7 +143,7 @@ class Model(nn.Module) :
         return F.log_softmax(self.fc3(x), dim=-1)
     
     
-    def generate(self, mels, save_path, batched, target, overlap) :
+    def generate(self, mels):
         
         self.eval()
         output = []
@@ -156,13 +155,14 @@ class Model(nn.Module) :
             
             mels = torch.FloatTensor(mels).cuda().unsqueeze(0)
             mels = self.pad_tensor(mels.transpose(1, 2), pad=self.pad, side='both')
-            mels, aux = self.upsample(mels.transpose(1, 2))
+            mels, aux = self.upsample(mels.transpose(2,1))
             
-            if batched :
-                mels = self.fold_with_overlap(mels, target, overlap)
-                aux = self.fold_with_overlap(aux, target, overlap)
+            # if batched :
+            #     mels = self.fold_with_overlap(mels, target, overlap)
+            #     aux = self.fold_with_overlap(aux, target, overlap)
 
             b_size, seq_len, _ = mels.size()
+            print(seq_len)
             
             h1 = torch.zeros(b_size, self.rnn_dims).cuda()
             h2 = torch.zeros(b_size, self.rnn_dims).cuda()
@@ -201,19 +201,19 @@ class Model(nn.Module) :
                 output.append(sample)
                 x = sample.unsqueeze(-1)
                 
-                if i % 100 == 0 : self.gen_display(i, seq_len, b_size, start)
+#                if i % 100 == 0 : self.gen_display(i, seq_len, b_size, start)
                     
         
         output = torch.stack(output).transpose(0, 1)
         output = output.cpu().numpy()
-        output = output.astype(np.float64)
+        # output = output.astype(np.float64)
         
-        if batched :
-            output = self.xfade_and_unfold(output, target, overlap)
-        else :
-            output = output[0]
+        # if batched :
+        #     output = self.xfade_and_unfold(output, target, overlap)
+        # else :
+        #     output = output[0]
             
-        librosa.output.write_wav(save_path, output.astype(np.float32), self.sample_rate)
+        #librosa.output.write_wav(save_path, output, self.sample_rate)
         
         self.train()
         

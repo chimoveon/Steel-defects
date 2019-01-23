@@ -183,8 +183,8 @@ hparams = tf.contrib.training.HParams(
 	# input and softmax output are assumed.
 	#Model general type
 	input_type="raw", #Raw has better quality but harder to train. mulaw-quantize is easier to train but has lower quality.
-	quantize_channels=2**8,  # 65536 (16-bit) (raw) or 256 (8-bit) (mulaw or mulaw-quantize) // number of classes = 256 <=> mu = 255
-	wavernn_bits=8,
+	quantize_channels=2**9,  # 65536 (16-bit) (raw) or 256 (8-bit) (mulaw or mulaw-quantize) // number of classes = 256 <=> mu = 255
+	wavernn_bits=9,
         rnn_dims=512,
         fc_dims=512,
 
@@ -233,8 +233,8 @@ hparams = tf.contrib.training.HParams(
 	# NN_scaler = 0.3, #Determines the initial Nearest Neighbor upsample values scale. i.e: upscaled_input_values = input_values * NN_scaler (1. to disable)
 
 	#global conditioning
-	# gin_channels = -1, #Set this to -1 to disable global conditioning, Only used for multi speaker dataset. It defines the depth of the embeddings (Recommended: 16)
-	# use_speaker_embedding = True, #whether to make a speaker embedding
+	gin_channels = -1, #Set this to -1 to disable global conditioning, Only used for multi speaker dataset. It defines the depth of the embeddings (Recommended: 16)
+	use_speaker_embedding = True, #whether to make a speaker embedding
 	# n_speakers = 5, #number of speakers (rows of the embedding)
 	# speakers_path = None, #Defines path to speakers metadata. Can be either in "speaker\tglobal_id" (with header) tsv format, or a single column tsv with speaker names. If None, use "speakers".
 	# speakers = ['speaker0', 'speaker1', #List of speakers used for embeddings visualization. (Consult "wavenet_vocoder/train.py" if you want to modify the speaker names source).
@@ -308,7 +308,7 @@ hparams = tf.contrib.training.HParams(
 	wavenet_swap_with_cpu = False, #Whether to use cpu as support to gpu for synthesis computation (while loop).(Not recommended: may cause major slowdowns! Only use when critical!)
 
 	#train/test split ratios, mini-batches sizes
-	wavenet_batch_size = 8, #batch size used to train wavenet.
+	wavernn_batch_size = 8, #batch size used to train wavenet.
 	#During synthesis, there is no max_time_steps limitation so the model can sample much longer audio than 8k(or 13k) steps. (Audio can go up to 500k steps, equivalent to ~21sec on 24kHz)
 	#Usually your GPU can handle ~2x wavenet_batch_size during synthesis for the same memory amount during training (because no gradients to keep and ops to register for backprop)
 	wavenet_synthesis_batch_size = 10 * 2, #This ensure that wavenet synthesis goes up to 4x~8x faster when synthesizing multiple sentences. Watch out for OOM with long audios.
