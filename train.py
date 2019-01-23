@@ -9,7 +9,7 @@ from infolog import log
 from tacotron.synthesize import tacotron_synthesize
 from tacotron.train import tacotron_train
 from wavernn_vocoder.train import wavernn_train
-from wavernn_vocoder.preprocess import 
+from wavernn_vocoder.preprocess import wavernn_preprocess 
 
 log = infolog.log
 
@@ -83,7 +83,7 @@ def train(args, log_dir, hparams):
 		log('###########################################################\n')
 		wavernn_preprocess(args, hparams)
 
-		checkpoint = wavenet_train(args, log_dir, hparams, input_path)
+		checkpoint = wavernn_train(args, log_dir, hparams, input_path)
 		if checkpoint is None:
 			raise ('Error occured while training Wavenet, Exiting!')
 		wave_state = 1

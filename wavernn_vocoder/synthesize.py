@@ -5,7 +5,7 @@ import torch
 from datasets.audio import save_wavernn_wav
 from infolog import log
 from tqdm import tqdm
-from wavernn.model import WaveRNN
+from wavernn_vocoder.wavernn import Model
 
 
 def synthesize(args, input_dir, output_dir, checkpoint_path, hparams):
@@ -13,7 +13,7 @@ def synthesize(args, input_dir, output_dir, checkpoint_path, hparams):
     device = torch.device('cuda' if args.use_cuda else 'cpu')
 
     # Initialize Model
-    model = WaveRNN(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,|
+    model = WaveRNN(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,\
                  feat_dims=hparams.feat_dims, compute_dims=hparams.compute_dims, res_out_dims=hparams.res_out_dims, res_blocks=hparams.res_blocks).to(device)
 
     # Load Model

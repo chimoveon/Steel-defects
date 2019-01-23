@@ -1,21 +1,20 @@
 import argparse
+import os
+import pickle
 
 import matplotlib.pyplot as plt
-import time, sys, math
+import time, sys
 import numpy as np
 import torch
 from torch import optim
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional
 from torch.utils.data import DataLoader, Dataset
-from scipy.io import wavfile
-from utils.display import *
 
 import infolog
 from hparams import hparams
-import librosa
 
-from wavernn_vocoder.wavernn import WaveRNN
+from wavernn_vocoder.wavernn import Model
 
 log = infolog.log
 
@@ -23,11 +22,11 @@ class AudiobookDataset(Dataset):
     def __init__(self, ids, path):
         self.path = path
         self.metadata = ids
-        
+       
     def __getitem__(self, index):
         file = self.metadata[index]
-        m = np.load(f'{self.path}mel/{file}.npy')
-        x = np.load(f'{self.path}quant/{file}.npy')
+        m = np.load('{}/mels/{}.npy'.format(self.path ,file))
+        x = np.load('{}/quant/{}.npy'.format(self.path, file))
         return m, x
 
     def __len__(self):
@@ -89,7 +88,7 @@ def train(log_dir, args, hparams, input_path) :
     device = torch.device('cuda' if args.use_cuda else 'cpu')
 
     # Load Dataset
-    with open(f'{input_dir}/dataset_ids.pkl', 'rb') as f:
+    with open('{}/dataset_ids.pkl'.format(input_dir), 'rb') as f:
         dataset = AudiobookDataset(pickle.load(f), input_dir)
 
     collate = CustomCollator(hparams)
@@ -97,7 +96,7 @@ def train(log_dir, args, hparams, input_path) :
     trn_loader = DataLoader(dataset, collate_fn=collate, batch_size=batch_size, shuffle=True, pin_memory=args.use_cuda)
 
     # Initialize Model
-    model = WaveRNN(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,|
+    model = WaveRNN(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,\
                  feat_dims=hparams.feat_dims, compute_dims=hparams.compute_dims, res_out_dims=hparams.res_out_dims, res_blocks=hparams.res_blocks).to(device)
 
     # Load Model
@@ -165,4 +164,9 @@ def train(log_dir, args, hparams, input_path) :
             else:
                 torch.save({'state_dict': model.state_dict(), 'global_step': step}, checkpoint_path)
                 # test_generate(model, step, test_dir, eval_wav_dir, hparams.sample_rate)
+
+def wavernn_train(args, log_dir, hparams, input_path):
+    input_dir = os.path.join(args.base_dir, 'wavernn_data')
+    train(log_dir, args, hparams, input_dir)
+    
         

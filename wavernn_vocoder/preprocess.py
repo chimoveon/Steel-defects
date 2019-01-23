@@ -8,7 +8,7 @@ from infolog import log
 
 def get_files(path, extension='.npy'):
     filenames = []
-    for filename in glob.iglob(f'{path}/**/*{extension}', recursive=True):
+    for filename in glob.iglob('{}/**/*{}'.format(path, extension), recursive=True):
         filenames.append(filename)
     return sorted(filenames)
 
@@ -45,14 +45,14 @@ def preprocess(args, audio_dir, taco_dir, hparams):
 
         dataset_ids.append(audio_id)
 
-        np.save(f'{quant_dir}/{audio_id}.npy', convert_gta_audio(path[0], hparams.wavernn_bits))
-        np.save(f'{mels_dir}/{mels_id}.npy', convert_gta_mels(path[1], hparams.wavernn_bits))
+        np.save('{}/{}.npy'.format(quant_dir, audio_id), convert_gta_audio(path[0], hparams.wavernn_bits))
+        np.save('{}/{}.npy'.format(mels_dir, mels_id), convert_gta_mels(path[1], hparams.wavernn_bits))
 
         log('%i/%i : audio: %s mel: %s' % (i + 1, len(audio_files), audio_id, mels_id))
 
     dataset_ids_unique = list(set(dataset_ids))
 
-    with open(f'{output_dir}/dataset_ids.pkl', 'wb') as file:
+    with open('{}/dataset_ids.pkl'.format(output_dir), 'wb') as file:
         pickle.dump(dataset_ids_unique, file)
 
 
