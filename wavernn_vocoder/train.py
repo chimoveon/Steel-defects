@@ -97,7 +97,8 @@ def train(log_dir, args, hparams, input_path) :
 
     # Initialize Model
     model = Model(rnn_dims=hparams.rnn_dims, fc_dims=hparams.fc_dims, bits=hparams.wavernn_bits, pad=hparams.wavernn_pad, upsample_factors = hparams.upsample_scales,\
-                 feat_dims=hparams.feat_dims, compute_dims=hparams.compute_dims, res_out_dims=hparams.res_out_dims, res_blocks=hparams.res_blocks).to(device)
+                 feat_dims=hparams.feat_dims, compute_dims=hparams.compute_dims, res_out_dims=hparams.res_out_dims, res_blocks=hparams.res_blocks,\
+                 hop_length=hparams.hop_size, sample_rate=hparams.sample_rate).to(device)
 
     # Load Model
     if not os.path.exists(checkpoint_path):

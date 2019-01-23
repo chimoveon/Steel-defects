@@ -20,6 +20,7 @@ def prepare_run(args):
 
 	run_name = args.name or args.wavernn_name or args.model
 	wave_checkpoint = os.path.join('logs-' + run_name, 'wave_' + args.checkpoint)
+	wave_checkpoint = 'wavernn_output/wavernn_model.pyt'
 	return taco_checkpoint, wave_checkpoint, modified_hp
 
 def get_sentences(args):
