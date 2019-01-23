@@ -27,7 +27,8 @@ class ResBlock(nn.Module) :
 class MelResNet(nn.Module) :
     def __init__(self, res_blocks, in_dims, compute_dims, res_out_dims) :
         super().__init__()
-        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=5, bias=False)
+        k_size = pad * 2 + 1
+        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=k_size, bias=False)
         self.batch_norm = nn.BatchNorm1d(compute_dims)
         self.layers = nn.ModuleList()
         for i in range(res_blocks) :
@@ -109,7 +110,7 @@ class Model(nn.Module) :
         self.fc1 = nn.Linear(rnn_dims + self.aux_dims, fc_dims)
         self.fc2 = nn.Linear(fc_dims + self.aux_dims, fc_dims)
         self.fc3 = nn.Linear(fc_dims, self.n_classes)
-#        num_params(self)
+        num_params(self)
     
     
     def forward(self, x, mels) :
@@ -143,82 +144,66 @@ class Model(nn.Module) :
         return F.log_softmax(self.fc3(x), dim=-1)
     
     
-    def generate(self, mels):
+    def generate(self, mels, save_path) :
         
         self.eval()
         output = []
-        start = time.time()
         rnn1 = self.get_gru_cell(self.rnn1)
         rnn2 = self.get_gru_cell(self.rnn2)
-        
-        with torch.no_grad() :
-            
-            mels = torch.FloatTensor(mels).cuda().unsqueeze(0)
-            mels = self.pad_tensor(mels.transpose(1, 2), pad=self.pad, side='both')
-            mels, aux = self.upsample(mels.transpose(2,1))
-            
-            # if batched :
-            #     mels = self.fold_with_overlap(mels, target, overlap)
-            #     aux = self.fold_with_overlap(aux, target, overlap)
 
-            b_size, seq_len, _ = mels.size()
-            print(seq_len)
-            
-            h1 = torch.zeros(b_size, self.rnn_dims).cuda()
-            h2 = torch.zeros(b_size, self.rnn_dims).cuda()
-            x = torch.zeros(b_size, 1).cuda()
-            
-            d = self.aux_dims
-            aux_split = [aux[:, :, d*i:d*(i+1)] for i in range(4)]
-            
-            for i in range(seq_len) :
+        with torch.no_grad():
+            start = time.time()
+            x = torch.zeros(1, 1).to(device)
+            h1 = torch.zeros(1, self.rnn_dims).to(device)
+            h2 = torch.zeros(1, self.rnn_dims).to(device)
+
+            mels = torch.FloatTensor(mels).to(device).unsqueeze(0)
+            mels, aux = self.upsample(mels)
+
+            aux_idx = [self.aux_dims * i for i in range(5)]
+            a1 = aux[:, :, aux_idx[0]:aux_idx[1]]
+            a2 = aux[:, :, aux_idx[1]:aux_idx[2]]
+            a3 = aux[:, :, aux_idx[2]:aux_idx[3]]
+            a4 = aux[:, :, aux_idx[3]:aux_idx[4]]
+
+            seq_len = mels.size(1)
+
+            for i in range(seq_len):
 
                 m_t = mels[:, i, :]
-                
-                a1_t, a2_t, a3_t, a4_t = \
-                    (a[:, i, :] for a in aux_split)
-                
+                a1_t = a1[:, i, :]
+                a2_t = a2[:, i, :]
+                a3_t = a3[:, i, :]
+                a4_t = a4[:, i, :]
+
                 x = torch.cat([x, m_t, a1_t], dim=1)
                 x = self.I(x)
                 h1 = rnn1(x, h1)
-                
+
                 x = x + h1
                 inp = torch.cat([x, a2_t], dim=1)
                 h2 = rnn2(inp, h2)
-                
+
                 x = x + h2
                 x = torch.cat([x, a3_t], dim=1)
                 x = F.relu(self.fc1(x))
-                
+
                 x = torch.cat([x, a4_t], dim=1)
                 x = F.relu(self.fc2(x))
-                
-                logits = self.fc3(x)
-                posterior = F.softmax(logits, dim=1)
+                x = self.fc3(x)
+                posterior = F.softmax(x, dim=1).view(-1)
                 distrib = torch.distributions.Categorical(posterior)
-                
                 sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
                 output.append(sample)
-                x = sample.unsqueeze(-1)
-                
-#                if i % 100 == 0 : self.gen_display(i, seq_len, b_size, start)
-                    
-        
-        output = torch.stack(output).transpose(0, 1)
-        output = output.cpu().numpy()
-        # output = output.astype(np.float64)
-        
-        # if batched :
-        #     output = self.xfade_and_unfold(output, target, overlap)
-        # else :
-        #     output = output[0]
-            
-        #librosa.output.write_wav(save_path, output, self.sample_rate)
-        
+                x = torch.FloatTensor([[sample]]).to(device)
+                if i % 100 == 0:
+                    speed = int((i + 1) / (time.time() - start))
+                    log('{}/{} -- Speed: {} samples/sec'.format(i + 1, seq_len, speed))
+        output = torch.stack(output).cpu().numpy()
+        librosa.output.write_wav(save_path, output, sample_rate)
         self.train()
-        
         return output
-    
+
     def gen_display(self, i, seq_len, b_size, start) :
         gen_rate = (i + 1) / (time.time() - start) * b_size / 1000 
         realtime_ratio = gen_rate * 1000 / self.sample_rate
