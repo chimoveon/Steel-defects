@@ -60,7 +60,7 @@ def main():
 	parser.add_argument('--mode', default='eval', help='mode of run: can be one of {}'.format(accepted_modes))
 	parser.add_argument('--GTA', default='True', help='Ground truth aligned synthesis, defaults to True, only considered in synthesis mode')
 	parser.add_argument('--text_list', default='', help='Text file contains list of texts to be synthesized. Valid if mode=eval')
-	parser.add_argument('--speaker_id', default=None, help='Defines the speakers ids to use when running standalone Wavenet on a folder of mels. this variable must be a comma-separated list of ids')
+	parser.add_argument('--base_dir', default='', help='')
 	args = parser.parse_args()
 
 	accepted_models = ['Tacotron', 'WaveRNN', 'Tacotron-2']
@@ -89,7 +89,7 @@ def main():
 	if args.model == 'Tacotron':
 		_ = tacotron_synthesize(args, hparams, taco_checkpoint, sentences)
 	elif args.model == 'WaveRNN':
-		wavenet_synthesize(args, hparams, wave_checkpoint)
+		wavernn_synthesize(args, hparams, wave_checkpoint)
 	elif args.model == 'Tacotron-2':
 		synthesize(args, hparams, taco_checkpoint, wave_checkpoint, sentences)
 	else:

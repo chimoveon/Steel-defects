@@ -14,6 +14,8 @@ def save_wav(wav, path, sr):
 	#proposed by @dsmiller
 	wavfile.write(path, sr, wav.astype(np.int16))
 
+def save_wavernn_wav(wav, path, sr):
+    librosa.output.write_wav(path, wav, sr=sr)
 def save_wavenet_wav(wav, path, sr, inv_preemphasize, k):
 	# wav = inv_preemphasis(wav, k, inv_preemphasize)
 	wav *= 32767 / max(0.01, np.max(np.abs(wav)))

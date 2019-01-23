@@ -29,7 +29,7 @@ def synthesize(args, input_dir, output_dir, checkpoint_path, hparams):
     filenames = [f for f in sorted(os.listdir(input_dir)) if f.endswith('.npy')]
     for i, filename in tqdm(enumerate(filenames)):
         mel = np.load(os.path.join(input_dir, filename)).T
-        save_wavernn_wav(model.generate(mel), f'{output_dir}/{i}_generated.wav', hparams.sample_rate)
+        save_wavernn_wav(model.generate(mel), '{}/{}_generated.wav'.format(output_dir, i), hparams.sample_rate)
 
 
 def wavernn_synthesize(args, hparams, checkpoint_path):
