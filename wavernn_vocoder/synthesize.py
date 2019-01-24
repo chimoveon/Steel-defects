@@ -23,6 +23,9 @@ def synthesize(args, input_dir, output_dir, checkpoint_path, hparams):
     else:
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
+    if args.use_cuda:
+        model = nn.DataParallel(model).to(device)
+
     log('Loading model from {}'.format(checkpoint_path))
     model.load_state_dict(checkpoint['state_dict'])
 
