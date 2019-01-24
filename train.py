@@ -132,7 +132,7 @@ def main():
 	if args.model == 'Tacotron':
 		tacotron_train(args, log_dir, hparams)
 	elif args.model == 'WaveRNN':
-#		wavernn_preprocess(args, hparams)
+		wavernn_preprocess(args, hparams)
 		wavernn_train(args, log_dir, hparams, args.wavernn_input)
 	elif args.model == 'Tacotron-2':
 		train(args, log_dir, hparams)

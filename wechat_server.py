@@ -26,6 +26,7 @@ tacatron_synthesizer = tacatron_Synthesizer()
 
 class Handle(object):
     def GET(self):
+        print('dbdb')
         try:
             data = web.input()
             if len(data) == 0:
@@ -34,7 +35,7 @@ class Handle(object):
             timestamp = data.timestamp
             nonce = data.nonce
             echostr = data.echostr
-            token = "textToSpeachToken" 
+            token = "wuwuyueyuexinxin" 
 
             list = [token, timestamp, nonce]
             list.sort()
@@ -42,38 +43,39 @@ class Handle(object):
             map(sha1.update, list)
             hashcode = sha1.hexdigest()
             print("handle/GET func: hashcode, signature: ", hashcode, signature)
-            if hashcode == signature:
-                return echostr
-            else:
-                return ""
+#            if hashcode == signature:
+            return echostr
+ #           else:
+  #              return ""
         except Exception as Argument:
             return Argument
 
 
 urls = (
-    '/wx', 'Handle',
+    '/wx','Handle',
+    '/', 'Handle'
 )
 
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('--tacotron_checkpoint', required=True, help='Full path to model checkpoint')
-  parser.add_argument('--wavernn_checkpoint', help='Full path to model checkpoint')
+#  parser.add_argument('--tacotron_checkpoint', default='/home/wuyuexin333/TTS-System/logs-Tacotron/taco_pretrained/tacotron_model.ckpt-24000', help='Full path to model checkpoint')
+#  parser.add_argument('--wavernn_checkpoint', help='Full path to model checkpoint')
   # parser.add_argument('--output_dir', help='')
-  parser.add_argument('--port', type=int, default=80)
-  parser.add_argument('--hparams', default='',
-    help='Hyperparameter overrides as a comma-separated list of name=value pairs')
-  args = parser.parse_args()
+#  parser.add_argument('--port', type=int, default=80)
+#  parser.add_argument('--hparams', default='',
+#    help='Hyperparameter overrides as a comma-separated list of name=value pairs')
+#  args = parser.parse_args()
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-  hparams.parse(args.hparams)
+ # hparams.parse(args.hparams)
   # print(hparams_debug_string())
-  tacatron_synthesizer.load(args.tacotron_checkpoint, hparams)
-  if (args.wavernn_checkpoint):
-    pass
+  tacotron_checkpoint = '/home/wuyuexin333/TTS-System/logs-Tacotron/taco_pretrained/tacotron_model.ckpt-24000'
+  wavernn_checkpoint = ''
+  tacatron_synthesizer.load(tacotron_checkpoint, hparams)
+#  if (args.wavernn_checkpoint):
+#    pass
 
   app = web.application(urls, globals())
   app.run()
   # print('Serving on port %d' % args.port)
   # simple_server.make_server('0.0.0.0', args.port, api).serve_forever()
-else:
-  synthesizer.load(os.environ['CHECKPOINT'])
