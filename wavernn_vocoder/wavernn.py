@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from infolog import log
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class ResBlock(nn.Module) :
     def __init__(self, dims) :
@@ -27,7 +28,7 @@ class ResBlock(nn.Module) :
 class MelResNet(nn.Module) :
     def __init__(self, res_blocks, in_dims, compute_dims, res_out_dims) :
         super().__init__()
-        k_size = pad * 2 + 1
+#        k_size = pad * 2 + 1
         self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=5, bias=False)
         self.batch_norm = nn.BatchNorm1d(compute_dims)
         self.layers = nn.ModuleList()
@@ -200,7 +201,7 @@ class Model(nn.Module) :
                     speed = int((i + 1) / (time.time() - start))
                     log('{}/{} -- Speed: {} samples/sec'.format(i + 1, seq_len, speed))
         output = torch.stack(output).cpu().numpy()
-        librosa.output.write_wav(save_path, output, sample_rate)
+#        librosa.output.write_wav(save_path, output, sample_rate)
         self.train()
         return output
 
