@@ -19,7 +19,7 @@ def convert_gta_audio(audio_path, bits):
     return quant.astype(np.int)
 
 
-def convert_gta_mels(mels_path):
+def convert_gta_mels(mels_path, bits):
     mels = np.load(mels_path).T
     return mels.astype(np.float32)
 
