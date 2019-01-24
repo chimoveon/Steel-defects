@@ -45,8 +45,9 @@ def train(args, log_dir, hparams):
 	state_file = os.path.join(log_dir, 'state_log')
 	#Get training states
 	(taco_state, GTA_state, wave_state), input_path = read_seq(state_file)
+#        taco_state = True
 
-	if not taco_state:
+	if taco_state:
 		log('\n#############################################################\n')
 		log('Tacotron Train\n')
 		log('###########################################################\n')

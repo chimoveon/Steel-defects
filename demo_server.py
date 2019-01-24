@@ -70,9 +70,9 @@ class SynthesisResource:
   def on_get(self, req, res):
     if not req.params.get('text'):
       raise falcon.HTTPBadRequest()
-    mels, speaker_ids = tacatron_synthesizer.synthesize([req.params.get('text')], basenames, None, None, None, True)
+    mels, speaker_ids = tacatron_synthesizer.synthesize([req.params.get('text')],['test.npy'], None, None, None, True)
     assert len(mels) == 1
-    wav = audio.inv_mel_spectrogram(mel.T, hparams)
+    wav = audio.inv_mel_spectrogram(mels[0].T, hparams)
     out = io.BytesIO()
     audio.save_wav(wav, out, hparams.sample_rate)
     res.data = out.getvalue()
@@ -98,7 +98,7 @@ if __name__ == '__main__':
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
   hparams.parse(args.hparams)
   print(hparams_debug_string())
-  tacatron_synthesizer.load(args.checkpoint, hparams)
+  tacatron_synthesizer.load(args.tacotron_checkpoint, hparams)
   if (args.wavernn_checkpoint):
     pass
   print('Serving on port %d' % args.port)
