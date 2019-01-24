@@ -34,7 +34,7 @@ hparams = tf.contrib.training.HParams(
 	#Hardware setup: Default supposes user has only one GPU: "/gpu:0" (Both Tacotron and WaveNet can be trained on multi-GPU: data parallelization)
 	#Synthesis also uses the following hardware parameters for multi-GPU parallel synthesis.
 	tacotron_num_gpus = 1, #Determines the number of gpus in use for Tacotron training.
-	wavernn_num_gpus = 1, #Determines the number of gpus in use for WaveNet training.
+	wavenet_num_gpus = 1, #Determines the number of gpus in use for WaveNet training.
 	split_on_cpu = True, #Determines whether to split data on CPU or on first GPU. This is automatically True when more than 1 GPU is used. 
 		#(Recommend: False on slow CPUs/Disks, True otherwise for small speed boost)
 	###########################################################################################################################################
@@ -183,62 +183,52 @@ hparams = tf.contrib.training.HParams(
 	# input and softmax output are assumed.
 	#Model general type
 	input_type="raw", #Raw has better quality but harder to train. mulaw-quantize is easier to train but has lower quality.
-	quantize_channels=2**9,  # 65536 (16-bit) (raw) or 256 (8-bit) (mulaw or mulaw-quantize) // number of classes = 256 <=> mu = 255
-	wavernn_bits=9,
-        rnn_dims=512,
-        fc_dims=512,
-
-	wavernn_lr_rate=1e-4,
-	wavernn_pad=2,
-	feat_dims=80,
-	compute_dims=128,
-	res_out_dims=128,
-	res_blocks=10,
-	# use_bias = True, #Whether to use bias in convolutional layers of the Wavenet
-	# legacy = True, #Whether to use legacy mode: Multiply all skip outputs but the first one with sqrt(0.5) (True for more early training stability, especially for large models)
-	# residual_legacy = True, #Whether to scale residual blocks outputs by a factor of sqrt(0.5) (True for input variance preservation early in training and better overall stability)
+	quantize_channels=2**16,  # 65536 (16-bit) (raw) or 256 (8-bit) (mulaw or mulaw-quantize) // number of classes = 256 <=> mu = 255
+	use_bias = True, #Whether to use bias in convolutional layers of the Wavenet
+	legacy = True, #Whether to use legacy mode: Multiply all skip outputs but the first one with sqrt(0.5) (True for more early training stability, especially for large models)
+	residual_legacy = True, #Whether to scale residual blocks outputs by a factor of sqrt(0.5) (True for input variance preservation early in training and better overall stability)
 
 	#Model Losses parmeters
 	#Minimal scales ranges for MoL and Gaussian modeling
-	# log_scale_min=float(np.log(1e-14)), #Mixture of logistic distributions minimal log scale
-	# log_scale_min_gauss = float(np.log(1e-7)), #Gaussian distribution minimal allowed log scale
-	# #Loss type
-	# cdf_loss = True, #Whether to use CDF loss in Gaussian modeling. Advantages: non-negative loss term and more training stability. (Automatically True for MoL)
+	log_scale_min=float(np.log(1e-14)), #Mixture of logistic distributions minimal log scale
+	log_scale_min_gauss = float(np.log(1e-7)), #Gaussian distribution minimal allowed log scale
+	#Loss type
+	cdf_loss = True, #Whether to use CDF loss in Gaussian modeling. Advantages: non-negative loss term and more training stability. (Automatically True for MoL)
 
-	# #model parameters
-	# #To use Gaussian distribution as output distribution instead of mixture of logistics, set "out_channels = 2" instead of "out_channels = 10 * 3". (UNDER TEST)
-	# out_channels = 2, #This should be equal to quantize channels when input type is 'mulaw-quantize' else: num_distributions * 3 (prob, mean, log_scale).
-	# layers = 20, #Number of dilated convolutions (Default: Simplified Wavenet of Tacotron-2 paper)
-	# stacks = 2, #Number of dilated convolution stacks (Default: Simplified Wavenet of Tacotron-2 paper)
-	# residual_channels = 128, #Number of residual block input/output channels.
-	# gate_channels = 256, #split in 2 in gated convolutions
-	# skip_out_channels = 128, #Number of residual block skip convolution channels.
-	# kernel_size = 3, #The number of inputs to consider in dilated convolutions.
+	#model parameters
+	#To use Gaussian distribution as output distribution instead of mixture of logistics, set "out_channels = 2" instead of "out_channels = 10 * 3". (UNDER TEST)
+	out_channels = 2, #This should be equal to quantize channels when input type is 'mulaw-quantize' else: num_distributions * 3 (prob, mean, log_scale).
+	layers = 20, #Number of dilated convolutions (Default: Simplified Wavenet of Tacotron-2 paper)
+	stacks = 2, #Number of dilated convolution stacks (Default: Simplified Wavenet of Tacotron-2 paper)
+	residual_channels = 128, #Number of residual block input/output channels.
+	gate_channels = 256, #split in 2 in gated convolutions
+	skip_out_channels = 128, #Number of residual block skip convolution channels.
+	kernel_size = 3, #The number of inputs to consider in dilated convolutions.
 
 	#Upsampling parameters (local conditioning)
-	# cin_channels = 80, #Set this to -1 to disable local conditioning, else it must be equal to num_mels!!
-	# upsample_conditional_features = True, #Whether to repeat conditional features or upsample them (The latter is recommended)
+	cin_channels = 80, #Set this to -1 to disable local conditioning, else it must be equal to num_mels!!
+	upsample_conditional_features = True, #Whether to repeat conditional features or upsample them (The latter is recommended)
 	#Upsample types: ('1D', '2D', 'Resize', 'SubPixel')
 	#All upsampling initialization/kernel_size are chosen to omit checkerboard artifacts as much as possible. (Resize is designed to omit that by nature).
 	#To be specific, all initial upsample weights/biases (when NN_init=True) ensure that the upsampling layers act as a "Nearest neighbor upsample" of size "hop_size" (checkerboard free).
 	#1D spans all frequency bands for each frame (channel-wise) while 2D spans "freq_axis_kernel_size" bands at a time. Both are vanilla transpose convolutions.
 	#Resize is a 2D convolution that follows a Nearest Neighbor (NN) resize. For reference, this is: "NN resize->convolution".
 	#Finally, SubPixel (2D) is the ICNR version (initialized to be equivalent to "convolution->NN resize") of Sub-Pixel convolutions. also called "checkered artifact free sub-pixel conv".
-	# upsample_type = 'SubPixel', #Type of the upsampling deconvolution. Can be ('1D' or '2D', 'Resize', 'SubPixel').
-	# upsample_activation = 'Relu', #Activation function used during upsampling. Can be ('LeakyRelu', 'Relu' or None)
+	upsample_type = 'SubPixel', #Type of the upsampling deconvolution. Can be ('1D' or '2D', 'Resize', 'SubPixel').
+	upsample_activation = 'Relu', #Activation function used during upsampling. Can be ('LeakyRelu', 'Relu' or None)
 	upsample_scales = [5, 5, 11], #prod(upsample_scales) should be equal to hop_size
-	# freq_axis_kernel_size = 2, #Only used for 2D upsampling types. This is the number of requency bands that are spanned at a time for each frame.
-	# leaky_alpha = 0.4, #slope of the negative portion of LeakyRelu (LeakyRelu: y=x if x>0 else y=alpha * x)
-	# NN_init = True, #Determines whether we want to initialize upsampling kernels/biases in a way to ensure upsample is initialize to Nearest neighbor upsampling. (Mostly for debug)
-	# NN_scaler = 0.3, #Determines the initial Nearest Neighbor upsample values scale. i.e: upscaled_input_values = input_values * NN_scaler (1. to disable)
+	freq_axis_kernel_size = 2, #Only used for 2D upsampling types. This is the number of requency bands that are spanned at a time for each frame.
+	leaky_alpha = 0.4, #slope of the negative portion of LeakyRelu (LeakyRelu: y=x if x>0 else y=alpha * x)
+	NN_init = True, #Determines whether we want to initialize upsampling kernels/biases in a way to ensure upsample is initialize to Nearest neighbor upsampling. (Mostly for debug)
+	NN_scaler = 0.3, #Determines the initial Nearest Neighbor upsample values scale. i.e: upscaled_input_values = input_values * NN_scaler (1. to disable)
 
 	#global conditioning
 	gin_channels = -1, #Set this to -1 to disable global conditioning, Only used for multi speaker dataset. It defines the depth of the embeddings (Recommended: 16)
 	use_speaker_embedding = True, #whether to make a speaker embedding
-	# n_speakers = 5, #number of speakers (rows of the embedding)
-	# speakers_path = None, #Defines path to speakers metadata. Can be either in "speaker\tglobal_id" (with header) tsv format, or a single column tsv with speaker names. If None, use "speakers".
-	# speakers = ['speaker0', 'speaker1', #List of speakers used for embeddings visualization. (Consult "wavenet_vocoder/train.py" if you want to modify the speaker names source).
-	# 			'speaker2', 'speaker3', 'speaker4'], #Must be consistent with speaker ids specified for global conditioning for correct visualization.
+	n_speakers = 5, #number of speakers (rows of the embedding)
+	speakers_path = None, #Defines path to speakers metadata. Can be either in "speaker\tglobal_id" (with header) tsv format, or a single column tsv with speaker names. If None, use "speakers".
+	speakers = ['speaker0', 'speaker1', #List of speakers used for embeddings visualization. (Consult "wavenet_vocoder/train.py" if you want to modify the speaker names source).
+				'speaker2', 'speaker3', 'speaker4'], #Must be consistent with speaker ids specified for global conditioning for correct visualization.
 	###########################################################################################################################################
 
 	#Tacotron Training
@@ -299,8 +289,6 @@ hparams = tf.contrib.training.HParams(
 	###########################################################################################################################################
 
 	#Wavenet Training
-	wavernn_epoch = 1000,
-
 	wavenet_random_seed = 5339, # S=5, E=3, D=9 :)
 	wavenet_data_random_state = 1234, #random state for train test split repeatability
 
@@ -308,7 +296,7 @@ hparams = tf.contrib.training.HParams(
 	wavenet_swap_with_cpu = False, #Whether to use cpu as support to gpu for synthesis computation (while loop).(Not recommended: may cause major slowdowns! Only use when critical!)
 
 	#train/test split ratios, mini-batches sizes
-	wavernn_batch_size = 8, #batch size used to train wavenet.
+	wavenet_batch_size = 8, #batch size used to train wavenet.
 	#During synthesis, there is no max_time_steps limitation so the model can sample much longer audio than 8k(or 13k) steps. (Audio can go up to 500k steps, equivalent to ~21sec on 24kHz)
 	#Usually your GPU can handle ~2x wavenet_batch_size during synthesis for the same memory amount during training (because no gradients to keep and ops to register for backprop)
 	wavenet_synthesis_batch_size = 10 * 2, #This ensure that wavenet synthesis goes up to 4x~8x faster when synthesizing multiple sentences. Watch out for OOM with long audios.

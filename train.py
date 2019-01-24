@@ -8,7 +8,8 @@ from hparams import hparams
 from infolog import log
 from tacotron.synthesize import tacotron_synthesize
 from tacotron.train import tacotron_train
-from wavenet_vocoder.train import wavenet_train
+from wavernn_vocoder.train import wavernn_train
+from wavernn_vocoder.preprocess import wavernn_preprocess 
 
 log = infolog.log
 
@@ -44,8 +45,9 @@ def train(args, log_dir, hparams):
 	state_file = os.path.join(log_dir, 'state_log')
 	#Get training states
 	(taco_state, GTA_state, wave_state), input_path = read_seq(state_file)
+#        taco_state = True
 
-	if not taco_state:
+	if taco_state:
 		log('\n#############################################################\n')
 		log('Tacotron Train\n')
 		log('###########################################################\n')
@@ -80,7 +82,9 @@ def train(args, log_dir, hparams):
 		log('\n#############################################################\n')
 		log('Wavenet Train\n')
 		log('###########################################################\n')
-		checkpoint = wavenet_train(args, log_dir, hparams, input_path)
+		wavernn_preprocess(args, hparams)
+
+		checkpoint = wavernn_train(args, log_dir, hparams, input_path)
 		if checkpoint is None:
 			raise ('Error occured while training Wavenet, Exiting!')
 		wave_state = 1
@@ -95,7 +99,7 @@ def main():
 	parser.add_argument('--hparams', default='',
 		help='Hyperparameter overrides as a comma-separated list of name=value pairs')
 	parser.add_argument('--tacotron_input', default='training_data/train.txt')
-	parser.add_argument('--wavenet_input', default='tacotron_output/gta/map.txt')
+	parser.add_argument('--wavernn_input', default='tacotron_output/gta/map.txt')
 	parser.add_argument('--name', help='Name of logging directory.')
 	parser.add_argument('--model', default='Tacotron-2')
 	parser.add_argument('--input_dir', default='training_data', help='folder to contain inputs sentences/targets')
@@ -103,6 +107,7 @@ def main():
 	parser.add_argument('--mode', default='synthesis', help='mode for synthesis of tacotron after training')
 	parser.add_argument('--GTA', default='True', help='Ground truth aligned synthesis, defaults to True, only considered in Tacotron synthesis mode')
 	parser.add_argument('--restore', type=bool, default=True, help='Set this to False to do a fresh training')
+	parser.add_argument('--use_cuda', type=bool, default=True, help='whether use gpu to train the wavernn model')
 	parser.add_argument('--summary_interval', type=int, default=250,
 		help='Steps between running summary ops')
 	parser.add_argument('--embedding_interval', type=int, default=10000,
@@ -112,12 +117,12 @@ def main():
 	parser.add_argument('--eval_interval', type=int, default=10000,
 		help='Steps between eval on test data')
 	parser.add_argument('--tacotron_train_steps', type=int, default=200000, help='total number of tacotron training steps')
-	parser.add_argument('--wavenet_train_steps', type=int, default=500000, help='total number of wavenet training steps')
+	parser.add_argument('--wavernn_train_steps', type=int, default=500000, help='total number of wavernn training steps')
 	parser.add_argument('--tf_log_level', type=int, default=1, help='Tensorflow C++ log level.')
 	parser.add_argument('--slack_url', default=None, help='slack webhook notification destination link')
 	args = parser.parse_args()
 
-	accepted_models = ['Tacotron', 'WaveNet', 'Tacotron-2']
+	accepted_models = ['Tacotron', 'WaveRNN', 'Tacotron-2']
 
 	if args.model not in accepted_models:
 		raise ValueError('please enter a valid model to train: {}'.format(accepted_models))
@@ -126,8 +131,9 @@ def main():
 
 	if args.model == 'Tacotron':
 		tacotron_train(args, log_dir, hparams)
-	elif args.model == 'WaveNet':
-		wavenet_train(args, log_dir, hparams, args.wavenet_input)
+	elif args.model == 'WaveRNN':
+		wavernn_preprocess(args, hparams)
+		wavernn_train(args, log_dir, hparams, args.wavernn_input)
 	elif args.model == 'Tacotron-2':
 		train(args, log_dir, hparams)
 	else:

@@ -6,6 +6,65 @@ from scipy import signal
 from scipy.io import wavfile
 
 
+def mulaw(x, mu=256):
+	mu = 255
+	return _sign(x) * _log1p(mu * _abs(x)) / _log1p(mu)
+def mulaw_quantize(x, mu=256):
+	mu = 255
+	y = mulaw(x, mu)
+	# scale [-1, 1] to [0, mu]
+	return _asint((y + 1) / 2 * mu)
+
+def _sign(x):
+	#wrapper to support tensorflow tensors/numpy arrays
+	isnumpy = isinstance(x, np.ndarray)
+	isscalar = np.isscalar(x)
+	return np.sign(x) if (isnumpy or isscalar) else tf.sign(x)
+
+
+def _log1p(x):
+	#wrapper to support tensorflow tensors/numpy arrays
+	isnumpy = isinstance(x, np.ndarray)
+	isscalar = np.isscalar(x)
+	return np.log1p(x) if (isnumpy or isscalar) else tf.log1p(x)
+
+
+def _abs(x):
+	#wrapper to support tensorflow tensors/numpy arrays
+	isnumpy = isinstance(x, np.ndarray)
+	isscalar = np.isscalar(x)
+	return np.abs(x) if (isnumpy or isscalar) else tf.abs(x)
+
+
+def _asint(x):
+	#wrapper to support tensorflow tensors/numpy arrays
+	isnumpy = isinstance(x, np.ndarray)
+	isscalar = np.isscalar(x)
+	return x.astype(np.int) if isnumpy else int(x) if isscalar else tf.cast(x, tf.int32)
+
+
+def _asfloat(x):
+	#wrapper to support tensorflow tensors/numpy arrays
+	isnumpy = isinstance(x, np.ndarray)
+	isscalar = np.isscalar(x)
+	return x.astype(np.float32) if isnumpy else float(x) if isscalar else tf.cast(x, tf.float32)
+
+def _assert_valid_input_type(s):
+	assert s == 'mulaw-quantize' or s == 'mulaw' or s == 'raw'
+
+def is_mulaw_quantize(s):
+	_assert_valid_input_type(s)
+	return s == 'mulaw-quantize'
+
+def is_mulaw(s):
+	_assert_valid_input_type(s)
+	return s == 'mulaw'
+
+def is_raw(s):
+	_assert_valid_input_type(s)
+	return s == 'raw'
+
+
 def load_wav(path, sr):
 	return librosa.core.load(path, sr=sr)[0]
 
@@ -14,6 +73,8 @@ def save_wav(wav, path, sr):
 	#proposed by @dsmiller
 	wavfile.write(path, sr, wav.astype(np.int16))
 
+def save_wavernn_wav(wav, path, sr):
+    librosa.output.write_wav(path, wav, sr=sr)
 def save_wavenet_wav(wav, path, sr, inv_preemphasize, k):
 	# wav = inv_preemphasis(wav, k, inv_preemphasize)
 	wav *= 32767 / max(0.01, np.max(np.abs(wav)))

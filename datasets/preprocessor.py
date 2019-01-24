@@ -4,7 +4,7 @@ from functools import partial
 
 import numpy as np
 from datasets import audio
-from wavenet_vocoder.util import is_mulaw, is_mulaw_quantize, mulaw, mulaw_quantize
+
 
 
 def build_from_path(hparams, input_dirs, mel_dir, linear_dir, wav_dir, n_jobs=12, tqdm=lambda x: x):
@@ -88,9 +88,9 @@ def _process_utterance(mel_dir, linear_dir, wav_dir, index, wav_path, text, hpar
 			raise RuntimeError('wav has invalid value: {}'.format(wav_path))
 
 	#Mu-law quantize
-	if is_mulaw_quantize(hparams.input_type):
+	if audio.is_mulaw_quantize(hparams.input_type):
 		#[0, quantize_channels)
-		out = mulaw_quantize(wav, hparams.quantize_channels)
+		out = audio.mulaw_quantize(wav, hparams.quantize_channels)
 
 		#Trim silences
 		start, end = audio.start_and_end_indices(out, hparams.silence_threshold)
@@ -98,13 +98,13 @@ def _process_utterance(mel_dir, linear_dir, wav_dir, index, wav_path, text, hpar
 		preem_wav = preem_wav[start: end]
 		out = out[start: end]
 
-		constant_values = mulaw_quantize(0, hparams.quantize_channels)
+		constant_values = audio.mulaw_quantize(0, hparams.quantize_channels)
 		out_dtype = np.int16
 
-	elif is_mulaw(hparams.input_type):
+	elif audio.is_mulaw(hparams.input_type):
 		#[-1, 1]
-		out = mulaw(wav, hparams.quantize_channels)
-		constant_values = mulaw(0., hparams.quantize_channels)
+		out = audio.mulaw(wav, hparams.quantize_channels)
+		constant_values = audio.mulaw(0., hparams.quantize_channels)
 		out_dtype = np.float32
 
 	else:
