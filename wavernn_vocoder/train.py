@@ -18,6 +18,7 @@ from wavernn_vocoder.wavernn import Model
 
 log = infolog.log
 
+pp = 0
 class AudiobookDataset(Dataset):
     def __init__(self, ids, path):
         self.path = path
@@ -52,6 +53,9 @@ class CustomCollator():
         coarse = [x[1][sig_offsets[i]:sig_offsets[i] + seq_len + 1] \
               for i, x in enumerate(batch)]
     
+        global pp
+        pp += 1
+        print(pp)
         mels = np.stack(mels).astype(np.float32)
         coarse = np.stack(coarse).astype(np.int64)
     
