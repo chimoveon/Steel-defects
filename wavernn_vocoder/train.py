@@ -40,21 +40,26 @@ class CustomCollator():
 
     def __call__(self, batch):
         mel_win = 5 + 2 * self.pad
-        seq_len = self.hop_size * mel_win
+        seq_len = self.hop_size * 5
 
-        mels = []
-        coarse = []
-        for x in batch:
-            max_offset = x[0].shape[-1] - mel_win
-            mel_offset = np.random.randint(0, max_offset)
-            sig_offset = mel_offset * self.hop_size
-            mels.append(x[0][:, mel_offset:(mel_offset + mel_win)])
-            coarse.append(x[1][sig_offset:(sig_offset + seq_len + 1)])
-
-        mels = torch.FloatTensor(np.stack(mels).astype(np.float32))
-        coarse = torch.LongTensor(np.stack(coarse).astype(np.int64))
-
-        x_input = 2 * coarse[:, :seq_len].float() / (2**self.bits - 1.) - 1.
+        max_offsets = [x[0].shape[-1] - (mel_win + 2 * self.pad) for x in batch]
+        mel_offsets = [np.random.randint(0, offset) for offset in max_offsets]
+        sig_offsets = [(offset + self.pad) * self.hop_size for offset in mel_offsets]
+    
+        mels = [x[0][:, mel_offsets[i]:mel_offsets[i] + mel_win] \
+            for i, x in enumerate(batch)]
+    
+        coarse = [x[1][sig_offsets[i]:sig_offsets[i] + seq_len + 1] \
+              for i, x in enumerate(batch)]
+    
+        mels = np.stack(mels).astype(np.float32)
+        coarse = np.stack(coarse).astype(np.int64)
+    
+        mels = torch.FloatTensor(mels)
+        coarse = torch.LongTensor(coarse)
+    
+        x_input = 2 * coarse[:, :seq_len].float() / (2**bits - 1.) - 1.
+    
         y_coarse = coarse[:, 1:]
 
         return x_input, mels, y_coarse
